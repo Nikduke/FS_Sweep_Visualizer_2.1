@@ -57,6 +57,28 @@ def _mix_rgb(a: Tuple[int, int, int], b: Tuple[int, int, int], t: float) -> Tupl
     )
 
 
+def _parse_color_to_rgb255(color: str) -> Tuple[int, int, int]:
+    """
+    Accept Plotly palette entries in either hex ("#rrggbb") or "rgb(...)" / "rgba(...)" form.
+    """
+    c = str(color).strip()
+    if not c:
+        return (68, 68, 68)
+    if c.startswith("#"):
+        return tuple(int(v) for v in pc.hex_to_rgb(c))
+    if c.lower().startswith("rgb"):
+        tup = pc.unlabel_rgb(c)
+        if len(tup) >= 3:
+            return (int(round(tup[0])), int(round(tup[1])), int(round(tup[2])))
+    # handle hex without '#'
+    c2 = c.lstrip().lower()
+    if len(c2) in (3, 6) and all(ch in "0123456789abcdef" for ch in c2):
+        if len(c2) == 3:
+            c2 = "".join([ch * 2 for ch in c2])
+        return tuple(int(v) for v in pc.hex_to_rgb(f"#{c2}"))
+    return (68, 68, 68)
+
+
 def _shade_hex(base_hex: str, position: float) -> str:
     """
     Create a shade variant of a base color.
@@ -65,7 +87,7 @@ def _shade_hex(base_hex: str, position: float) -> str:
       - negative => darken toward black
       - positive => lighten toward white
     """
-    base_rgb = tuple(pc.hex_to_rgb(base_hex))
+    base_rgb = _parse_color_to_rgb255(base_hex)
     p = float(max(-1.0, min(1.0, position)))
     if p >= 0:
         # Lighten
